@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload and Download</title>
+</head>
+<body>
+    <h1>File Upload</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput" />
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="uploadMessage"></div>
+
+    <h1>Uploaded Files</h1>
+    <ul id="fileList"></ul>
+
+    <h1>File Download</h1>
+    <form id="downloadForm">
+        <label for="fileName">Enter File Name:</label>
+        <input type="text" id="fileName" name="fileName" />
+        <button type="submit">Download</button>
+    </form>
+
+    <div id="downloadMessage"></div>
+
+    <script>
+        function uploadFile(formData) {
+            fetch('/api/files/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(message => {
+                document.getElementById('uploadMessage').innerText = message;
+                listFiles();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('uploadMessage').innerText = 'Error uploading file';
+            });
+        }
+
+        function listFiles() {
+            fetch('/api/files/list')
+            .then(response => response.json())
+            .then(files => {
+                const fileList = document.getElementById('fileList');
+                fileList.innerHTML = '';
+                files.forEach(file => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `<a href="/api/files/download/${file}" target="_blank">${file}</a>`;
+                    fileList.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData();
+            var fileInput = document.getElementById('fileInput');
+            formData.append('file', fileInput.files[0]);
+            uploadFile(formData);
+        });
+
+        document.getElementById('downloadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var fileName = document.getElementById('fileName').value.trim();
+            if (fileName === '') {
+                document.getElementById('downloadMessage').innerText = 'Please enter a file name.';
+                return;
+            }
+            fetch(`/api/files/download/${fileName}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('File not found');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.getElementById('downloadMessage').innerText = '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('downloadMessage').innerText = 'File not found';
+            });
+        });
+
+        // Initial call to list uploaded files
+        listFiles();
+    </script>
+</body>
+</html>
