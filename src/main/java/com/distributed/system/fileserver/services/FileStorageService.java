@@ -67,7 +67,7 @@ public class FileStorageService {
 	public List<String> getAllFiles() {
 		List<String> allFiles = new ArrayList<String>();
 		try {
-			File rootLocationFile = rootLocation.getFileName().toFile();
+			File rootLocationFile = rootLocation.toFile();
 			File[] files = rootLocationFile.listFiles();
 			if (files != null) {
 				for (File file : files) {
